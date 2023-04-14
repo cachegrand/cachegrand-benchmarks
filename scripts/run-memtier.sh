@@ -22,6 +22,7 @@ set -e
 # When testing redis and keydb ensure that protected mode is off, otherwise the benchmark will fail.
 
 # General configuration
+MIN_THREADS=64
 MAX_THREADS=64
 CLIENTS_PER_THREAD=25
 MEMTIER_TEST_DURATION=60
@@ -29,10 +30,11 @@ MEMTIER_TEST_RUNS=3
 MEMTIER_DATA_SIZE=64
 
 # Calcuate the end of the sequence
+SEQ_START=$(( $(echo "sqrt($MIN_THREADS)" | bc) - 2 ))
 SEQ_END=$(( $(echo "sqrt($MAX_THREADS)" | bc) - 2 ))
 
 # Run the benchmarks
-for I in $(seq 0 $SEQ_END);
+for I in $(seq $SEQ_START $SEQ_END);
 do
     # Calculate the number of threads
     MEMTIER_THREADS=$((2**$I))
