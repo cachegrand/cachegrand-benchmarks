@@ -31,6 +31,7 @@ Benchmarks can be of two types:
 
 ## Contributing
 If you have benchmark data you'd like to contribute or if you find any issues with the existing data, please feel free to open an issue or submit a pull request.
-
-License
-This repository is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0).
+## License
+The benchmarks data in this repository are licensed under the Creative Commons
+Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0) meanwhile the
+scripts might be licensed under different licenses (e.g. GPL3, BSD-3-clause, etc.).
