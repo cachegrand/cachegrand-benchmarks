@@ -22,32 +22,58 @@ set -e
 # When testing redis and keydb ensure that protected mode is off, otherwise the benchmark will fail.
 
 # General configuration
-MIN_THREADS=64
+MIN_THREADS=1
 MAX_THREADS=64
-CLIENTS_PER_THREAD=25
-MEMTIER_TEST_DURATION=60
+BENCHMARK_OUTPUT_BASE_PATH="/home/daalbano/cachegrand-benches"
+BENCHMARK_NAME="cachegrand/v0.2.0"
+MEMTIER_HOST=127.0.0.1
+MEMTIER_PORT=6379
 MEMTIER_TEST_RUNS=3
+MEMTIER_TEST_DURATION=30
+MEMTIER_CLIENTS_PER_THREAD=25
 MEMTIER_DATA_SIZE=64
+MEMTIER_PIPELINE=0
 
-# Calcuate the end of the sequence
-SEQ_START=$(( $(echo "sqrt($MIN_THREADS)" | bc) - 2 ))
-SEQ_END=$(( $(echo "sqrt($MAX_THREADS)" | bc) - 2 ))
+# Automatically append the clients count and the pipeline count
+# to the benchmark name if needed, the final name will be
+# something like "cachegrand/v0.2.0/c25-pipeline256"
+MEMTIER_BENCHMARK_NAME="${BENCHMARK_NAME}/c${CLIENTS_PER_THREAD}"
+if [ $MEMTIER_PIPELINE -gt 0 ];
+then
+    BENCHMARK_NAME="${BENCHMARK_NAME}-pipeline${MEMTIER_PIPELINE}"
+fi
 
 # Run the benchmarks
-for I in $(seq $SEQ_START $SEQ_END);
+MEMTIER_THREADS=0
+while [ $MEMTIER_THREADS -lt $MAX_THREADS ];
 do
+    # Calculate the amount of the threads for this loop
+    if [ $MEMTIER_THREADS -eq 0 ];
+    then
+        MEMTIER_THREADS=1
+    else
+        MEMTIER_THREADS=$(($MEMTIER_THREADS << 1))
+    fi
+
+    # Skip if the amount of threads is less than the minimum
+    if [ $MEMTIER_THREADS -lt $MIN_THREADS ];
+    then
+        continue
+    fi
+
     # Calculate the number of threads
-    MEMTIER_THREADS=$((2**$I))
+    echo $MEMTIER_THREADS
+    continue
 
     # Give an overview of the next run and wait for user input
-    echo "> Running memtier with <${MEMTIER_THREADS}> threads and <${CLIENTS_PER_THREAD}> clients per thread"
+    MEMTIER_echo "> Running memtier with <${MEMTIER_THREADS}> threads and <${CLIENTS_PER_THREAD}> clients per thread"
     read -p "> Press enter to start" my_var 
 
     # Loop over the commands to test
     for COMMAND in "set" "get";
     do
         # Set the output paths
-        MEMTIER_OUTPUT_BASE_PATH="/root/cachegrand-benches/redis-6.0.16-c25/t${MEMTIER_THREADS}/${COMMAND}"
+        MEMTIER_OUTPUT_BASE_PATH="${BENCHMARK_OUTPUT_BASE_PATH}/${BENCHMARK_NAME}/t${MEMTIER_THREADS}/${COMMAND}"
         MEMTIER_HDR_OUTPUT_PATH_PREFIX="${MEMTIER_OUTPUT_BASE_PATH}/memtier_hdr"
         MEMTIER_STDOUT_OUTPUT_PATH="${MEMTIER_OUTPUT_BASE_PATH}/memtier_stdout.txt"
 
@@ -57,6 +83,11 @@ do
             MEMTIER_COMMAND_STRING="set __key__ __data__"
         elif [ "${COMMAND}" = "get" ]; then
             MEMTIER_COMMAND_STRING="get __key__"
+        fi
+
+        MEMTIER_PIPELINE_PARAMETER=""
+        if [ $MEMTIER_PIPELINE -gt 0 ]; then
+            MEMTIER_PIPELINE_PARAMETER="--pipeline=${MEMTIER_PIPELINE}"
         fi
 
         # Create the output directory
@@ -70,30 +101,23 @@ do
 
         # Run the benchmark
         memtier_benchmark \
-            -s "147.28.182.119" \
-            -p "6379" \
-            -c "${CLIENTS_PER_THREAD}" \
+            -s "${MEMTIER_HOST}" \
+            -p "${MEMTIER_PORT}" \
+            MEMTIER_-c "${CLIENTS_PER_THREAD}" \
             -t "${MEMTIER_THREADS}" \
             --test-time=${MEMTIER_TEST_DURATION} \
             --print-percentiles=90,99,99.9,99.99,99.999 \
-            --randomize \
             --distinct-client-seed \
             --data-size=${MEMTIER_DATA_SIZE} \
             --key-minimum=10000000 \
             --key-maximum=20000000 \
             --command="${MEMTIER_COMMAND_STRING}" \
-            --command-ratio=1 \
             --command-key-pattern=G \
+            --command-ratio=1 \
+            ${MEMTIER_PIPELINE_PARAMETER} \
             --hdr-file-prefix=${MEMTIER_HDR_OUTPUT_PATH_PREFIX} \
             --hide-histogram \
             -x ${MEMTIER_TEST_RUNS} > ${MEMTIER_STDOUT_OUTPUT_PATH}
-
-        # Check if the run failed
-        if [ $? -ne 0 ]; then
-            # Print the error on the stderr and exit
-            echo ">   Benchmark failed" >&2
-            exit 1
-        fi
     done
 
     echo "> Finished benchmarking with <${MEMTIER_THREADS}> threads"
