@@ -40,6 +40,12 @@ cachegrand's benchmarks can be of two types:
   improvements and features introduced in that release, and the folder name will match the version
   used (e.g. v0.2.1).
 
+## Latest Benchmarks Results
+
+To make it easier to access the data contained in the repo, a number of charts have been put together and attached to the repository as picture.
+
+![latest-benchmarks](images/latest-benchmark-results.png)
+
 ## Contributing
 If you have benchmark data you'd like to contribute or if you find any issues with the existing
 data, please feel free to open an issue or submit a pull request.
