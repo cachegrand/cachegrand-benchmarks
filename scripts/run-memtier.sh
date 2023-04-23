@@ -24,20 +24,20 @@ set -e
 # General configuration
 MIN_THREADS=1
 MAX_THREADS=64
-BENCHMARK_OUTPUT_BASE_PATH="/home/daalbano/cachegrand-benches"
-BENCHMARK_NAME="cachegrand/v0.2.0"
-MEMTIER_HOST=127.0.0.1
-MEMTIER_PORT=6379
+BENCHMARK_OUTPUT_BASE_PATH="/path/to/local/folder/cachegrand-benches"
+BENCHMARK_NAME="PLATFORM_NAME/vPLATFORM_VERSION"
+MEMTIER_HOST=SERVER_HOST
+MEMTIER_PORT=SERVER_PORT
 MEMTIER_TEST_RUNS=3
-MEMTIER_TEST_DURATION=30
-MEMTIER_CLIENTS_PER_THREAD=25
-MEMTIER_DATA_SIZE=64
-MEMTIER_PIPELINE=0
+MEMTIER_TEST_DURATION=120
+MEMTIER_CLIENTS_PER_THREAD=25 # set to 5 when testing pipelining
+MEMTIER_DATA_SIZE=128
+MEMTIER_PIPELINE=0 # set to 64 for when testing pipelining
 
 # Automatically append the clients count and the pipeline count
 # to the benchmark name if needed, the final name will be
-# something like "cachegrand/v0.2.0/c25-pipeline256"
-MEMTIER_BENCHMARK_NAME="${BENCHMARK_NAME}/c${CLIENTS_PER_THREAD}"
+# something like "cachegrand/v0.2.0-c25-pipeline256"
+BENCHMARK_NAME="${BENCHMARK_NAME}-c${MEMTIER_CLIENTS_PER_THREAD}"
 if [ $MEMTIER_PIPELINE -gt 0 ];
 then
     BENCHMARK_NAME="${BENCHMARK_NAME}-pipeline${MEMTIER_PIPELINE}"
@@ -61,19 +61,18 @@ do
         continue
     fi
 
-    # Calculate the number of threads
-    echo $MEMTIER_THREADS
-    continue
+    MEMTIER_OUTPUT_BASE_PATH_PARTIAL="${BENCHMARK_OUTPUT_BASE_PATH}/${BENCHMARK_NAME}/t${MEMTIER_THREADS}"
 
     # Give an overview of the next run and wait for user input
-    MEMTIER_echo "> Running memtier with <${MEMTIER_THREADS}> threads and <${CLIENTS_PER_THREAD}> clients per thread"
+    echo "> Running memtier with <${MEMTIER_THREADS}> threads and <${MEMTIER_CLIENTS_PER_THREAD}> clients per thread"
+    echo ">   - Output base path: <${MEMTIER_OUTPUT_BASE_PATH_PARTIAL}>"
     read -p "> Press enter to start" my_var 
 
     # Loop over the commands to test
     for COMMAND in "set" "get";
     do
         # Set the output paths
-        MEMTIER_OUTPUT_BASE_PATH="${BENCHMARK_OUTPUT_BASE_PATH}/${BENCHMARK_NAME}/t${MEMTIER_THREADS}/${COMMAND}"
+        MEMTIER_OUTPUT_BASE_PATH="${MEMTIER_OUTPUT_BASE_PATH_PARTIAL}/${COMMAND}"
         MEMTIER_HDR_OUTPUT_PATH_PREFIX="${MEMTIER_OUTPUT_BASE_PATH}/memtier_hdr"
         MEMTIER_STDOUT_OUTPUT_PATH="${MEMTIER_OUTPUT_BASE_PATH}/memtier_stdout.txt"
 
@@ -103,14 +102,14 @@ do
         memtier_benchmark \
             -s "${MEMTIER_HOST}" \
             -p "${MEMTIER_PORT}" \
-            MEMTIER_-c "${CLIENTS_PER_THREAD}" \
+            -c "${MEMTIER_CLIENTS_PER_THREAD}" \
             -t "${MEMTIER_THREADS}" \
             --test-time=${MEMTIER_TEST_DURATION} \
             --print-percentiles=90,99,99.9,99.99,99.999 \
             --distinct-client-seed \
             --data-size=${MEMTIER_DATA_SIZE} \
-            --key-minimum=10000000 \
-            --key-maximum=20000000 \
+            --key-minimum=1000000 \
+            --key-maximum=2000000 \
             --command="${MEMTIER_COMMAND_STRING}" \
             --command-key-pattern=G \
             --command-ratio=1 \
