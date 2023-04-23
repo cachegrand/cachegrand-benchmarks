@@ -97,6 +97,7 @@ Memory Device
 
 ### `ip l`
 
+```
 # ip l
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -108,6 +109,7 @@ Memory Device
     link/ether 2c:ea:7f:ef:54:d3 brd ff:ff:ff:ff:ff:ff
 5: bond0: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
     link/ether 40:a6:b7:20:2f:e0 brd ff:ff:ff:ff:ff:ff
+```
 
 ### `ethtool`
 
